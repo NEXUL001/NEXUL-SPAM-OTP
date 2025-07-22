@@ -40,7 +40,7 @@ npm start
 
 ## Support Me
 <ul>
-  <li><strong>Tiktok</strong>: <a href="https://www.tiktok.com/@Nexul4you">@flow.falcon</a></li>
+  <li><strong>Tiktok</strong>: <a href="https://www.tiktok.com/@Nexul4you">@NexulTzy</a></li>
   <li><strong>Website</strong>: <a href=""></a></li>
   <li><strong>Github</strong>: <a href="https://github.com/NEXUL001">https://github.com/NEXUL001</a></li>
 </ul>
