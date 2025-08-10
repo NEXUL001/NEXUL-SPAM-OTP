@@ -1,43 +1,52 @@
-import os.path
-import base64
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
+import requests
+import time
+import random
 
-SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+# ======= KONFIGURASI =======
+API_KEY = "re_RJg6fun8_6zSurQw7aqLMhkA7uLqwjyhJ"  # Ganti dengan API key Resend kamu
+EMAIL_FROM = "nexul4you@gmail.com"  # Email pengirim (harus terverifikasi di Resend)
+SUBJECT = "Tes Kirim Email via Resend API"
+HTML_MESSAGE = """
+<h2>Halo!</h2>
+<p>Ini pesan tes dari Python & Resend API.</p>
+"""
+FILE_TARGET = "target.txt"  # File .txt berisi daftar email
+JEDA_MIN = 2  # Jeda minimal antar kirim (detik)
+JEDA_MAX = 5  # Jeda maksimal antar kirim (detik)
+# ===========================
 
-def gmail_service():
-    creds = None
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
-    return build('gmail', 'v1', credentials=creds)
+url = "https://api.resend.com/emails"
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
 
-def send_message(service, to, subject, body):
-    message = {
-        'raw': base64.urlsafe_b64encode(
-            f"To: {to}\r\nSubject: {subject}\r\n\r\n{body}".encode()
-        ).decode()
+# Baca daftar email dari file
+try:
+    with open(FILE_TARGET, "r") as f:
+        daftar_email = [line.strip() for line in f if line.strip()]
+except FileNotFoundError:
+    print(f"❌ File {FILE_TARGET} tidak ditemukan!")
+    exit()
+
+print(f"📧 Total email yang akan dikirim: {len(daftar_email)}\n")
+
+# Kirim email satu per satu
+for i, email_tujuan in enumerate(daftar_email, start=1):
+    data = {
+        "from": EMAIL_FROM,
+        "to": [email_tujuan],
+        "subject": SUBJECT,
+        "html": HTML_MESSAGE
     }
-    service.users().messages().send(userId='me', body=message).execute()
-    print("✅ Email terkirim via OAuth2")
 
-if __name__ == "__main__":
-    service = gmail_service()
-    to      = input("Email penerima: ").strip()
-    subject = input("Subjek: ").strip()
-    body    = input("Pesan: ").strip()
-    count   = int(input("Kirim berapa kali? "))
-    for i in range(1, count+1):
-        send_message(service, to, f"[{i}/{count}] {subject}",
-                     f"{body}\n\n(Pesan ke-{i} dari {count})")
-        
+    response = requests.post(url, headers=headers, json=data)
+
+    if response.status_code == 200:
+        print(f"[{i}/{len(daftar_email)}] ✅ Email terkirim ke {email_tujuan}")
+    else:
+        print(f"[{i}/{len(daftar_email)}] ❌ Gagal ke {email_tujuan} - {response.status_code} {response.text}")
+
+    # Jeda random untuk aman dari limit
+    jeda = random.randint(JEDA_MIN, JEDA_MAX)
+    time.sleep(jeda)
